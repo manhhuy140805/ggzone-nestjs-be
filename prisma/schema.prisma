@@ -1,0 +1,681 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model AdminAuditLog {
+  id          String    @id @default(uuid()) @map("Id") @db.Uuid
+  adminUserId String    @map("AdminUserId") @db.Uuid
+  action      String    @map("Action") @db.VarChar(100)
+  targetType  String?   @map("TargetType") @db.VarChar(50)
+  targetId    String?   @map("TargetId") @db.Uuid
+  oldValue    String?   @map("OldValue") @db.Text
+  newValue    String?   @map("NewValue") @db.Text
+  ipAddress   String?   @map("IpAddress") @db.VarChar(50)
+  userAgent   String?   @map("UserAgent") @db.VarChar(500)
+  reason      String?   @map("Reason") @db.Text
+  createdAt   DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  adminUser User @relation("AdminAuditLogAdminUser", fields: [adminUserId], references: [id])
+
+  @@index([action])
+  @@index([adminUserId])
+  @@index([createdAt])
+  @@index([targetType])
+  @@map("AdminAuditLogs")
+}
+
+model Announcement {
+  id             String    @id @default(uuid()) @map("Id") @db.Uuid
+  title          String    @map("Title") @db.VarChar(200)
+  content        String    @map("Content") @db.Text
+  type           String?   @map("Type") @db.VarChar(20)
+  priority       String?   @default("normal") @map("Priority") @db.VarChar(20)
+  targetAudience String?   @default("all") @map("TargetAudience") @db.VarChar(20)
+  isActive       Boolean?  @default(true) @map("IsActive")
+  startDate      DateTime? @map("StartDate") @db.Timestamptz(6)
+  endDate        DateTime? @map("EndDate") @db.Timestamptz(6)
+  createdBy      String?   @map("CreatedBy") @db.Uuid
+  createdAt      DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  createdByUser User? @relation("AnnouncementCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([isActive])
+  @@index([startDate])
+  @@index([type])
+  @@map("Announcements")
+}
+
+model Comment {
+  id              String    @id @default(uuid()) @map("Id") @db.Uuid
+  postId          String    @map("PostId") @db.Uuid
+  userId          String    @map("UserId") @db.Uuid
+  parentCommentId String?   @map("ParentCommentId") @db.Uuid
+  content         String    @map("Content") @db.Text
+  likesCount      Int?      @default(0) @map("LikesCount")
+  createdAt       DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+  updatedAt       DateTime? @default(now()) @map("UpdatedAt") @db.Timestamptz(6)
+
+  parentComment Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  replies       Comment[] @relation("CommentReplies")
+  post          Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id])
+
+  @@index([postId])
+  @@index([userId])
+  @@map("Comments")
+}
+
+model DailyStatistic {
+  id                String    @id @default(uuid()) @map("Id") @db.Uuid
+  statDate          DateTime  @unique @map("StatDate") @db.Date
+  newUsers          Int?      @default(0) @map("NewUsers")
+  activeUsers       Int?      @default(0) @map("ActiveUsers")
+  totalPosts        Int?      @default(0) @map("TotalPosts")
+  totalComments     Int?      @default(0) @map("TotalComments")
+  totalVideos       Int?      @default(0) @map("TotalVideos")
+  totalGameLaunches Int?      @default(0) @map("TotalGameLaunches")
+  totalRevenue      Decimal?  @default(0) @map("TotalRevenue") @db.Decimal(10, 2)
+  totalOrders       Int?      @default(0) @map("TotalOrders")
+  createdAt         DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  @@index([statDate])
+  @@map("DailyStatistics")
+}
+
+model EmailTemplate {
+  id           String    @id @default(uuid()) @map("Id") @db.Uuid
+  templateName String    @unique @map("TemplateName") @db.VarChar(100)
+  subject      String    @map("Subject") @db.VarChar(200)
+  htmlBody     String    @map("HtmlBody") @db.Text
+  textBody     String?   @map("TextBody") @db.Text
+  category     String?   @map("Category") @db.VarChar(50)
+  variables    String?   @map("Variables") @db.Text
+  isActive     Boolean?  @default(true) @map("IsActive")
+  updatedBy    String?   @map("UpdatedBy") @db.Uuid
+  updatedAt    DateTime? @default(now()) @map("UpdatedAt") @db.Timestamptz(6)
+  createdAt    DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  updatedByUser User? @relation("EmailTemplateUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@index([category])
+  @@index([isActive])
+  @@map("EmailTemplates")
+}
+
+model FeaturedContent {
+  id           String    @id @default(uuid()) @map("Id") @db.Uuid
+  contentType  String    @map("ContentType") @db.VarChar(50)
+  contentId    String    @map("ContentId") @db.Uuid
+  title        String?   @map("Title") @db.VarChar(200)
+  description  String?   @map("Description") @db.Text
+  imageUrl     String?   @map("ImageUrl") @db.VarChar(500)
+  displayOrder Int?      @default(0) @map("DisplayOrder")
+  startDate    DateTime? @map("StartDate") @db.Timestamptz(6)
+  endDate      DateTime? @map("EndDate") @db.Timestamptz(6)
+  isActive     Boolean?  @default(true) @map("IsActive")
+  createdBy    String?   @map("CreatedBy") @db.Uuid
+  createdAt    DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  createdByUser User? @relation("FeaturedContentCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([contentType])
+  @@index([displayOrder])
+  @@index([isActive])
+  @@map("FeaturedContent")
+}
+
+model Friendship {
+  id        String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId    String    @map("UserId") @db.Uuid
+  friendId  String    @map("FriendId") @db.Uuid
+  status    String?   @default("pending") @map("Status") @db.VarChar(20)
+  createdAt DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  user   User @relation("FriendshipUser", fields: [userId], references: [id])
+  friend User @relation("FriendshipFriend", fields: [friendId], references: [id])
+
+  @@unique([userId, friendId])
+  @@index([friendId])
+  @@index([status])
+  @@index([userId])
+  @@map("Friendships")
+}
+
+model FriendSuggestion {
+  id              String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId          String    @map("UserId") @db.Uuid
+  suggestedUserId String    @map("SuggestedUserId") @db.Uuid
+  reason          String?   @map("Reason") @db.VarChar(100)
+  score           Decimal?  @default(0) @map("Score") @db.Decimal(5, 2)
+  isShown         Boolean?  @default(false) @map("IsShown")
+  createdAt       DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  user          User @relation("FriendSuggestionUser", fields: [userId], references: [id], onDelete: Cascade)
+  suggestedUser User @relation("FriendSuggestionSuggestedUser", fields: [suggestedUserId], references: [id])
+
+  @@index([score])
+  @@index([userId])
+  @@map("FriendSuggestions")
+}
+
+model GameLaunchLog {
+  id              String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId          String    @map("UserId") @db.Uuid
+  gameId          String    @map("GameId") @db.Uuid
+  launchMethod    String?   @map("LaunchMethod") @db.VarChar(50)
+  launchedAt      DateTime? @default(now()) @map("LaunchedAt") @db.Timestamptz(6)
+  sessionDuration Int?      @map("SessionDuration")
+  endedAt         DateTime? @map("EndedAt") @db.Timestamptz(6)
+
+  game Game @relation(fields: [gameId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([gameId])
+  @@index([launchedAt])
+  @@index([userId])
+  @@map("GameLaunchLogs")
+}
+
+model GameReview {
+  id            String    @id @default(uuid()) @map("Id") @db.Uuid
+  gameId        String    @map("GameId") @db.Uuid
+  userId        String    @map("UserId") @db.Uuid
+  rating        Int       @map("Rating")
+  title         String?   @map("Title") @db.VarChar(200)
+  content       String?   @map("Content") @db.Text
+  hoursPlayed   Int?      @default(0) @map("HoursPlayed")
+  isRecommended Boolean?  @default(true) @map("IsRecommended")
+  helpfulCount  Int?      @default(0) @map("HelpfulCount")
+  createdAt     DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+  updatedAt     DateTime? @default(now()) @map("UpdatedAt") @db.Timestamptz(6)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([gameId, userId])
+  @@index([gameId])
+  @@index([userId])
+  @@map("GameReviews")
+}
+
+model Game {
+  id                      String    @id @default(uuid()) @map("Id") @db.Uuid
+  name                    String    @map("Name") @db.VarChar(100)
+  slug                    String    @unique @map("Slug") @db.VarChar(100)
+  description             String?   @map("Description") @db.Text
+  coverImageUrl           String?   @map("CoverImageUrl") @db.VarChar(500)
+  iconUrl                 String?   @map("IconUrl") @db.VarChar(500)
+  genre                   String?   @map("Genre") @db.VarChar(50)
+  platform                String?   @map("Platform") @db.VarChar(50)
+  releaseDate             DateTime? @map("ReleaseDate") @db.Date
+  publisher               String?   @map("Publisher") @db.VarChar(100)
+  isActive                Boolean?  @default(true) @map("IsActive")
+  gameType                String?   @default("desktop") @map("GameType") @db.VarChar(20)
+  launchUrl               String?   @map("LaunchUrl") @db.VarChar(500)
+  downloadUrl             String?   @map("DownloadUrl") @db.VarChar(500)
+  webPlayUrl              String?   @map("WebPlayUrl") @db.VarChar(500)
+  installSize             BigInt?   @map("InstallSize")
+  minimumRequirements     String?   @map("MinimumRequirements") @db.Text
+  recommendedRequirements String?   @map("RecommendedRequirements") @db.Text
+  launcherType            String?   @map("LauncherType") @db.VarChar(50)
+  createdAt               DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  gameLaunchLogs  GameLaunchLog[]
+  gameReviews     GameReview[]
+  photos          Photo[]
+  storeProducts   StoreProduct[]
+  userGameLibrary UserGameLibrary[]
+  videos          Video[]
+
+  @@map("Games")
+}
+
+model GroupMember {
+  id       String    @id @default(uuid()) @map("Id") @db.Uuid
+  groupId  String    @map("GroupId") @db.Uuid
+  userId   String    @map("UserId") @db.Uuid
+  role     String?   @default("member") @map("Role") @db.VarChar(20)
+  joinedAt DateTime? @default(now()) @map("JoinedAt") @db.Timestamptz(6)
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("GroupMembers")
+}
+
+model Group {
+  id            String    @id @default(uuid()) @map("Id") @db.Uuid
+  name          String    @map("Name") @db.VarChar(100)
+  description   String?   @map("Description") @db.Text
+  coverImageUrl String?   @map("CoverImageUrl") @db.VarChar(500)
+  iconUrl       String?   @map("IconUrl") @db.VarChar(500)
+  visibility    String?   @default("public") @map("Visibility") @db.VarChar(20)
+  membersCount  Int?      @default(0) @map("MembersCount")
+  createdBy     String?   @map("CreatedBy") @db.Uuid
+  createdAt     DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+  updatedAt     DateTime? @default(now()) @map("UpdatedAt") @db.Timestamptz(6)
+
+  createdByUser User?         @relation("GroupCreatedBy", fields: [createdBy], references: [id])
+  members       GroupMember[]
+  posts         Post[]
+
+  @@map("Groups")
+}
+
+model Message {
+  id         String    @id @default(uuid()) @map("Id") @db.Uuid
+  senderId   String    @map("SenderId") @db.Uuid
+  receiverId String    @map("ReceiverId") @db.Uuid
+  content    String    @map("Content") @db.Text
+  isRead     Boolean?  @default(false) @map("IsRead")
+  createdAt  DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  sender   User @relation("MessageSender", fields: [senderId], references: [id])
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id])
+
+  @@index([receiverId, isRead])
+  @@index([senderId])
+  @@map("Messages")
+}
+
+model ModerationQueue {
+  id          String    @id @default(uuid()) @map("Id") @db.Uuid
+  contentType String    @map("ContentType") @db.VarChar(50)
+  contentId   String    @map("ContentId") @db.Uuid
+  userId      String    @map("UserId") @db.Uuid
+  status      String?   @default("pending") @map("Status") @db.VarChar(20)
+  priority    String?   @default("normal") @map("Priority") @db.VarChar(20)
+  autoFlagged Boolean?  @default(false) @map("AutoFlagged")
+  flagReason  String?   @map("FlagReason") @db.Text
+  reviewedBy  String?   @map("ReviewedBy") @db.Uuid
+  reviewedAt  DateTime? @map("ReviewedAt") @db.Timestamptz(6)
+  reviewNotes String?   @map("ReviewNotes") @db.Text
+  createdAt   DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  user     User  @relation("ModerationQueueUser", fields: [userId], references: [id])
+  reviewer User? @relation("ModerationQueueReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([createdAt])
+  @@index([priority])
+  @@index([status])
+  @@map("ModerationQueue")
+}
+
+model Notification {
+  id          String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId      String    @map("UserId") @db.Uuid
+  type        String    @map("Type") @db.VarChar(50)
+  title       String?   @map("Title") @db.VarChar(200)
+  content     String?   @map("Content") @db.Text
+  relatedId   String?   @map("RelatedId") @db.Uuid
+  relatedType String?   @map("RelatedType") @db.VarChar(50)
+  isRead      Boolean?  @default(false) @map("IsRead")
+  createdAt   DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([userId, isRead])
+  @@map("Notifications")
+}
+
+model OrderItem {
+  id          String  @id @default(uuid()) @map("Id") @db.Uuid
+  orderId     String  @map("OrderId") @db.Uuid
+  productId   String? @map("ProductId") @db.Uuid
+  productName String? @map("ProductName") @db.VarChar(200)
+  quantity    Int?    @default(1) @map("Quantity")
+  unitPrice   Decimal @map("UnitPrice") @db.Decimal(10, 2)
+  totalPrice  Decimal @map("TotalPrice") @db.Decimal(10, 2)
+
+  order   StoreOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product StoreProduct? @relation(fields: [productId], references: [id])
+
+  @@map("OrderItems")
+}
+
+model Photo {
+  id         String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId     String    @map("UserId") @db.Uuid
+  imageUrl   String    @map("ImageUrl") @db.VarChar(500)
+  caption    String?   @map("Caption") @db.Text
+  gameId     String?   @map("GameId") @db.Uuid
+  likesCount Int?      @default(0) @map("LikesCount")
+  createdAt  DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  game Game? @relation(fields: [gameId], references: [id], onDelete: SetNull)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("Photos")
+}
+
+model PostLike {
+  id        String    @id @default(uuid()) @map("Id") @db.Uuid
+  postId    String    @map("PostId") @db.Uuid
+  userId    String    @map("UserId") @db.Uuid
+  createdAt DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+  @@map("PostLikes")
+}
+
+model PostMedia {
+  id         String    @id @default(uuid()) @map("Id") @db.Uuid
+  postId     String    @map("PostId") @db.Uuid
+  mediaUrl   String    @map("MediaUrl") @db.VarChar(500)
+  mediaType  String?   @map("MediaType") @db.VarChar(20)
+  orderIndex Int?      @default(0) @map("OrderIndex")
+  createdAt  DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("PostMedia")
+}
+
+model Post {
+  id            String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId        String    @map("UserId") @db.Uuid
+  groupId       String?   @map("GroupId") @db.Uuid
+  content       String?   @map("Content") @db.Text
+  postType      String?   @default("text") @map("PostType") @db.VarChar(20)
+  videoUrl      String?   @map("VideoUrl") @db.VarChar(500)
+  likesCount    Int?      @default(0) @map("LikesCount")
+  commentsCount Int?      @default(0) @map("CommentsCount")
+  sharesCount   Int?      @default(0) @map("SharesCount")
+  isPinned      Boolean?  @default(false) @map("IsPinned")
+  createdAt     DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+  updatedAt     DateTime? @default(now()) @map("UpdatedAt") @db.Timestamptz(6)
+
+  comments Comment[]
+  group    Group?      @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  media    PostMedia[]
+  likes    PostLike[]
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([groupId])
+  @@index([postType])
+  @@index([userId])
+  @@map("Posts")
+}
+
+model ShoppingCart {
+  id        String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId    String    @map("UserId") @db.Uuid
+  productId String    @map("ProductId") @db.Uuid
+  quantity  Int?      @default(1) @map("Quantity")
+  addedAt   DateTime? @default(now()) @map("AddedAt") @db.Timestamptz(6)
+
+  product StoreProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([userId])
+  @@map("ShoppingCart")
+}
+
+model StoreOrder {
+  id          String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId      String    @map("UserId") @db.Uuid
+  productId   String?   @map("ProductId") @db.Uuid
+  quantity    Int?      @default(1) @map("Quantity")
+  totalAmount Decimal   @map("TotalAmount") @db.Decimal(10, 2)
+  status      String?   @default("pending") @map("Status") @db.VarChar(20)
+  createdAt   DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  items   OrderItem[]
+  product StoreProduct? @relation(fields: [productId], references: [id])
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("StoreOrders")
+}
+
+model StoreProduct {
+  id            String    @id @default(uuid()) @map("Id") @db.Uuid
+  name          String    @map("Name") @db.VarChar(200)
+  description   String?   @map("Description") @db.Text
+  coverImageUrl String?   @map("CoverImageUrl") @db.VarChar(500)
+  price         Decimal   @map("Price") @db.Decimal(10, 2)
+  category      String?   @map("Category") @db.VarChar(50)
+  gameId        String?   @map("GameId") @db.Uuid
+  rating        Decimal?  @default(0) @map("Rating") @db.Decimal(3, 2)
+  reviewsCount  Int?      @default(0) @map("ReviewsCount")
+  status        String?   @default("online") @map("Status") @db.VarChar(20)
+  createdAt     DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  game          Game?          @relation(fields: [gameId], references: [id])
+  orderItems    OrderItem[]
+  shoppingCarts ShoppingCart[]
+  storeOrders   StoreOrder[]
+
+  @@map("StoreProducts")
+}
+
+model UserActivityLog {
+  id           String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId       String    @map("UserId") @db.Uuid
+  activityType String    @map("ActivityType") @db.VarChar(50)
+  relatedId    String?   @map("RelatedId") @db.Uuid
+  relatedType  String?   @map("RelatedType") @db.VarChar(50)
+  metadata     String?   @map("Metadata") @db.Text
+  createdAt    DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([activityType])
+  @@index([createdAt])
+  @@index([userId])
+  @@map("UserActivityLog")
+}
+
+model UserBadge {
+  id        String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId    String    @map("UserId") @db.Uuid
+  badgeName String    @map("BadgeName") @db.VarChar(50)
+  badgeType String?   @map("BadgeType") @db.VarChar(20)
+  iconUrl   String?   @map("IconUrl") @db.VarChar(500)
+  awardedAt DateTime? @default(now()) @map("AwardedAt") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("UserBadges")
+}
+
+model UserBan {
+  id        String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId    String    @map("UserId") @db.Uuid
+  bannedBy  String    @map("BannedBy") @db.Uuid
+  banType   String?   @map("BanType") @db.VarChar(20)
+  reason    String    @map("Reason") @db.Text
+  startDate DateTime? @default(now()) @map("StartDate") @db.Timestamptz(6)
+  endDate   DateTime? @map("EndDate") @db.Timestamptz(6)
+  isActive  Boolean?  @default(true) @map("IsActive")
+  createdAt DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  user         User @relation("UserBanUser", fields: [userId], references: [id], onDelete: Cascade)
+  bannedByUser User @relation("UserBanBannedBy", fields: [bannedBy], references: [id])
+
+  @@index([endDate])
+  @@index([isActive])
+  @@index([userId])
+  @@map("UserBans")
+}
+
+model UserGameLibrary {
+  id            String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId        String    @map("UserId") @db.Uuid
+  gameId        String    @map("GameId") @db.Uuid
+  isInstalled   Boolean?  @default(false) @map("IsInstalled")
+  installPath   String?   @map("InstallPath") @db.VarChar(500)
+  lastPlayed    DateTime? @map("LastPlayed") @db.Timestamptz(6)
+  totalPlayTime Int?      @default(0) @map("TotalPlayTime")
+  isFavorite    Boolean?  @default(false) @map("IsFavorite")
+  addedAt       DateTime? @default(now()) @map("AddedAt") @db.Timestamptz(6)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId])
+  @@index([gameId])
+  @@index([lastPlayed])
+  @@index([userId])
+  @@map("UserGameLibrary")
+}
+
+model UserPreference {
+  id                 String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId             String    @unique @map("UserId") @db.Uuid
+  theme              String?   @default("light") @map("Theme") @db.VarChar(20)
+  language           String?   @default("en") @map("Language") @db.VarChar(10)
+  emailNotifications Boolean?  @default(true) @map("EmailNotifications")
+  pushNotifications  Boolean?  @default(true) @map("PushNotifications")
+  privacyLevel       String?   @default("public") @map("PrivacyLevel") @db.VarChar(20)
+  showOnlineStatus   Boolean?  @default(true) @map("ShowOnlineStatus")
+  createdAt          DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+  updatedAt          DateTime? @default(now()) @map("UpdatedAt") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("UserPreferences")
+}
+
+model User {
+  id            String    @id @default(uuid()) @map("Id") @db.Uuid
+  username      String    @unique @map("Username") @db.VarChar(50)
+  email         String    @unique @map("Email") @db.VarChar(100)
+  passwordHash  String    @map("PasswordHash") @db.VarChar(255)
+  fullName      String?   @map("FullName") @db.VarChar(100)
+  avatarUrl     String?   @map("AvatarUrl") @db.VarChar(500)
+  coverImageUrl String?   @map("CoverImageUrl") @db.VarChar(500)
+  bio           String?   @map("Bio") @db.Text
+  location      String?   @map("Location") @db.VarChar(100)
+  status        String?   @default("offline") @map("Status") @db.VarChar(20)
+  role          String?   @default("user") @map("Role") @db.VarChar(20)
+  isVerified    Boolean?  @default(false) @map("IsVerified")
+  createdAt     DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+  updatedAt     DateTime? @default(now()) @map("UpdatedAt") @db.Timestamptz(6)
+
+  adminAuditLogs               AdminAuditLog[]    @relation("AdminAuditLogAdminUser")
+  announcementsCreated         Announcement[]     @relation("AnnouncementCreatedBy")
+  comments                     Comment[]
+  emailTemplatesUpdated        EmailTemplate[]    @relation("EmailTemplateUpdatedBy")
+  featuredContentsCreated      FeaturedContent[]  @relation("FeaturedContentCreatedBy")
+  friendshipsSent              Friendship[]       @relation("FriendshipUser")
+  friendshipsReceived          Friendship[]       @relation("FriendshipFriend")
+  friendSuggestions            FriendSuggestion[] @relation("FriendSuggestionUser")
+  suggestedInFriendSuggestions FriendSuggestion[] @relation("FriendSuggestionSuggestedUser")
+  gameLaunchLogs               GameLaunchLog[]
+  gameReviews                  GameReview[]
+  groupMembers                 GroupMember[]
+  groupsCreated                Group[]            @relation("GroupCreatedBy")
+  messagesSent                 Message[]          @relation("MessageSender")
+  messagesReceived             Message[]          @relation("MessageReceiver")
+  moderationQueueItems         ModerationQueue[]  @relation("ModerationQueueUser")
+  moderationReviews            ModerationQueue[]  @relation("ModerationQueueReviewer")
+  notifications                Notification[]
+  photos                       Photo[]
+  postLikes                    PostLike[]
+  posts                        Post[]
+  shoppingCartItems            ShoppingCart[]
+  storeOrders                  StoreOrder[]
+  activityLogs                 UserActivityLog[]
+  badges                       UserBadge[]
+  bans                         UserBan[]          @relation("UserBanUser")
+  bansCreated                  UserBan[]          @relation("UserBanBannedBy")
+  gameLibrary                  UserGameLibrary[]
+  preference                   UserPreference?
+  stats                        UserStats?
+  videoComments                VideoComment[]
+  videoLikes                   VideoLike[]
+  videos                       Video[]
+
+  @@index([email])
+  @@index([status])
+  @@index([username])
+  @@map("Users")
+}
+
+model UserStats {
+  id               String @id @default(uuid()) @map("Id") @db.Uuid
+  userId           String @unique @map("UserId") @db.Uuid
+  friendsCount     Int?   @default(0) @map("FriendsCount")
+  winningCount     Int?   @default(0) @map("WinningCount")
+  tournamentsCount Int?   @default(0) @map("TournamentsCount")
+  postsCount       Int?   @default(0) @map("PostsCount")
+  photosCount      Int?   @default(0) @map("PhotosCount")
+  videosCount      Int?   @default(0) @map("VideosCount")
+  groupsCount      Int?   @default(0) @map("GroupsCount")
+  totalPoints      Int?   @default(0) @map("TotalPoints")
+  level            Int?   @default(1) @map("Level")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("UserStats")
+}
+
+model VideoComment {
+  id         String    @id @default(uuid()) @map("Id") @db.Uuid
+  videoId    String    @map("VideoId") @db.Uuid
+  userId     String    @map("UserId") @db.Uuid
+  content    String    @map("Content") @db.Text
+  likesCount Int?      @default(0) @map("LikesCount")
+  createdAt  DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  user  User  @relation(fields: [userId], references: [id])
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@map("VideoComments")
+}
+
+model VideoLike {
+  id        String    @id @default(uuid()) @map("Id") @db.Uuid
+  videoId   String    @map("VideoId") @db.Uuid
+  userId    String    @map("UserId") @db.Uuid
+  createdAt DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+
+  user  User  @relation(fields: [userId], references: [id])
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, userId])
+  @@map("VideoLikes")
+}
+
+model Video {
+  id            String    @id @default(uuid()) @map("Id") @db.Uuid
+  userId        String    @map("UserId") @db.Uuid
+  gameId        String?   @map("GameId") @db.Uuid
+  title         String    @map("Title") @db.VarChar(200)
+  description   String?   @map("Description") @db.Text
+  videoUrl      String    @map("VideoUrl") @db.VarChar(500)
+  thumbnailUrl  String?   @map("ThumbnailUrl") @db.VarChar(500)
+  duration      Int?      @map("Duration")
+  viewsCount    Int?      @default(0) @map("ViewsCount")
+  likesCount    Int?      @default(0) @map("LikesCount")
+  commentsCount Int?      @default(0) @map("CommentsCount")
+  category      String?   @map("Category") @db.VarChar(50)
+  isPublic      Boolean?  @default(true) @map("IsPublic")
+  createdAt     DateTime? @default(now()) @map("CreatedAt") @db.Timestamptz(6)
+  updatedAt     DateTime? @default(now()) @map("UpdatedAt") @db.Timestamptz(6)
+
+  comments VideoComment[]
+  game     Game?          @relation(fields: [gameId], references: [id])
+  likes    VideoLike[]
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([category])
+  @@index([createdAt])
+  @@index([gameId])
+  @@index([userId])
+  @@map("Videos")
+}
